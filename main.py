@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from fastapi import Cookie, FastAPI, HTTPException, Query, Response, status
+from fastapi import Cookie, FastAPI, Header, HTTPException, Query, Response, status
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, StringConstraints, field_validator
 
@@ -64,15 +64,22 @@ class AppCookies(BaseModel):
     language: Literal["en", "es", "pl"] = "en"
 
 
+class AppHeaders(BaseModel):
+    user_agent: str | None
+
+
 @app.get("/", status_code=status.HTTP_200_OK)
-def root(app_cookies: Annotated[AppCookies, Cookie()]):
+def root(
+    app_cookies: Annotated[AppCookies, Cookie()],
+    app_headers: Annotated[AppHeaders, Header()],
+):
     greetings = {
         "en": "Welcome to Rent a Room",
         "es": "Bienvienidos a Rent a Room",
         "pl": "Witamy w Rent a Room",
     }
     greeting = greetings.get(app_cookies.language)
-    return {"message": greeting}
+    return {"message": greeting, "user_agent": app_headers.user_agent}
 
 
 @app.get(
