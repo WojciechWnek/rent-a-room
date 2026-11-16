@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Cookie, FastAPI, HTTPException, Query, Response, status
 from fastapi.staticfiles import StaticFiles
@@ -59,14 +59,19 @@ class RoomQueryParams(BaseModel):
         return search
 
 
+class AppCookies(BaseModel):
+    theme: Literal["light", "dark"] = "dark"
+    language: Literal["en", "es", "pl"] = "en"
+
+
 @app.get("/", status_code=status.HTTP_200_OK)
-def root(language: Annotated[str | None, Cookie()] = None):
+def root(app_cookies: Annotated[AppCookies, Cookie()]):
     greetings = {
         "en": "Welcome to Rent a Room",
         "es": "Bienvienidos a Rent a Room",
         "pl": "Witamy w Rent a Room",
     }
-    greeting = greetings.get(language or "en")
+    greeting = greetings.get(app_cookies.language)
     return {"message": greeting}
 
 
@@ -120,6 +125,9 @@ def get_room(room_id: int):
 
 @app.get("/preferences", status_code=status.HTTP_200_OK, tags=["preferences"])
 def set_preferences(response: Response):
-    response.set_cookie(key="theme", value="dark")
-    response.set_cookie(key="language", value="es")
+
+    app_cookies = AppCookies()
+
+    response.set_cookie(key="theme", value=app_cookies.theme)
+    response.set_cookie(key="language", value=app_cookies.languageß)
     return {"message": "Preferences set"}
