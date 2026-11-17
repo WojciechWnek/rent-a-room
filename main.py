@@ -152,6 +152,19 @@ def update_room(session: SessionDep, room_id: RoomId, room_payload: Room) -> Roo
     return room
 
 
+@app.delete("/rooms/{room_id}", status_code=status.HTTP_200_OK, tags=["rooms"])
+def delete_room(session: SessionDep, room_id: RoomId):
+    room = session.get(Room, room_id)
+    if not room:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
+        )
+
+    session.delete(room)
+    session.commit()
+    return room
+
+
 @app.get("/preferences", status_code=status.HTTP_200_OK, tags=["preferences"])
 def set_preferences(response: Response):
 
