@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from fastapi import Cookie, FastAPI, Header, HTTPException, Query, Response, status
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, StringConstraints, field_validator
-from sqlmodel import select
+from sqlmodel import col, func, select
 
 from database import SessionDep, create_db_and_tables
 from models import Room
@@ -92,32 +92,16 @@ def create_room(session: SessionDep, room: Room) -> Room:
     response_description="A list of rooms matching the filter criteria",
 )
 def get_rooms(session: SessionDep, params: Annotated[RoomQueryParams, Query()]):
-    results = session.exec(select(Room)).all()
+    statement = select(Room)
 
     if params.max_price:
-        results = [room for room in results if room.price_per_night <= params.max_price]
+        statement = statement.where(Room.price_per_night <= params.max_price)
 
     if params.search:
-        results = [room for room in results if params.search in room.name.lower()]
+        # statement = statement.where(func.lower(Room.name).contains(params.search))
+        statement = statement.where(col(Room.name).like(f"%{params.search}%"))
 
-    return results
-
-
-@app.get(
-    "/rooms/mansions", status_code=status.HTTP_200_OK, tags=["rooms"], deprecated=True
-)
-def get_mansions(params: Annotated[RoomQueryParams, Query()]):
-    results = [house]
-
-    if params.max_price:
-        results = [
-            room for room in results if room["price_per_night"] <= params.max_price
-        ]
-
-    if params.search:
-        results = [room for room in results if params.search in room["name"].lower()]
-
-    return results
+    return session.exec(statement).all()
 
 
 @app.get("/rooms/{room_id}", status_code=status.HTTP_200_OK, tags=["rooms"])
