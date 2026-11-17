@@ -14,7 +14,7 @@ from sqlmodel import col, select
 from app.dependencies.database import SessionDep
 from app.models.room import Room, RoomBase, RoomPublic, RoomUpdate
 
-router = APIRouter()
+router = APIRouter(prefix="/rooms", tags=["rooms"])
 
 
 class RoomQueryParams(BaseModel):
@@ -57,9 +57,8 @@ RoomDep = Annotated[Room, Depends(get_room_or_404)]
 
 
 @router.post(
-    "/rooms",
+    "/",
     status_code=status.HTTP_201_CREATED,
-    tags=["rooms"],
     response_model=RoomPublic,
 )
 def create_room(session: SessionDep, room: RoomBase):
@@ -71,9 +70,8 @@ def create_room(session: SessionDep, room: RoomBase):
 
 
 @router.get(
-    "/rooms",
+    "/",
     status_code=status.HTTP_200_OK,
-    tags=["rooms"],
     summary="List all avaliable rooms",
     description="Returns all rooms. Supports filtering",
     response_description="A list of rooms matching the filter criteria",
@@ -97,9 +95,8 @@ def get_rooms(session: SessionDep, params: Annotated[RoomQueryParams, Query()]):
 
 
 @router.get(
-    "/rooms/{room_id}",
+    "/{room_id}",
     status_code=status.HTTP_200_OK,
-    tags=["rooms"],
     response_model=RoomPublic,
 )
 def get_room(room: RoomDep):
@@ -108,9 +105,8 @@ def get_room(room: RoomDep):
 
 
 @router.patch(
-    "/rooms/{room_id}",
+    "/{room_id}",
     status_code=status.HTTP_200_OK,
-    tags=["rooms"],
     response_model=RoomPublic,
 )
 def update_room(session: SessionDep, room: RoomDep, room_payload: RoomUpdate):
@@ -124,9 +120,8 @@ def update_room(session: SessionDep, room: RoomDep, room_payload: RoomUpdate):
 
 
 @router.delete(
-    "/rooms/{room_id}",
+    "/{room_id}",
     status_code=status.HTTP_200_OK,
-    tags=["rooms"],
     response_model=RoomPublic,
 )
 def delete_room(session: SessionDep, room: RoomDep):
