@@ -110,6 +110,7 @@ def create_room(session: SessionDep, room: RoomBase):
     summary="List all avaliable rooms",
     description="Returns all rooms. Supports filtering",
     response_description="A list of rooms matching the filter criteria",
+    response_model=list[RoomPublic],
 )
 def get_rooms(session: SessionDep, params: Annotated[RoomQueryParams, Query()]):
     statement = select(Room)
@@ -128,11 +129,16 @@ def get_rooms(session: SessionDep, params: Annotated[RoomQueryParams, Query()]):
     return session.exec(statement).all()
 
 
-@app.get("/rooms/{room_id}", status_code=status.HTTP_200_OK, tags=["rooms"])
+@app.get(
+    "/rooms/{room_id}",
+    status_code=status.HTTP_200_OK,
+    tags=["rooms"],
+    response_model=RoomPublic,
+)
 def get_room(
     session: SessionDep,
     room_id: RoomId,
-) -> Room:
+):
     room = session.get(Room, room_id)
     if not room:
         raise HTTPException(
@@ -142,15 +148,21 @@ def get_room(
     return room
 
 
-@app.patch("/rooms/{room_id}", status_code=status.HTTP_200_OK, tags=["rooms"])
-def update_room(session: SessionDep, room_id: RoomId, room_payload: Room) -> Room:
+@app.patch(
+    "/rooms/{room_id}",
+    status_code=status.HTTP_200_OK,
+    tags=["rooms"],
+    response_model=RoomPublic,
+)
+def update_room(session: SessionDep, room_id: RoomId, room_payload: RoomUpdate):
     room = session.get(Room, room_id)
     if not room:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
         )
 
-    room.sqlmodel_update(room_payload)
+    room_payload_without_default_values = room_payload.model_dump(exclude_unset=True)
+    room.sqlmodel_update(room_payload_without_default_values)
     session.add(room)
     session.commit()
     session.refresh(room)
