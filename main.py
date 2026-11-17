@@ -43,6 +43,8 @@ class RoomQueryParams(BaseModel):
         description="Provide a keyword to search within room title",
         examples=["sunny", "cozy"],
     )
+    limit: int = Field(default=10, ge=1, le=100)
+    offset: int = Field(default=0, ge=0)
 
     @field_validator("search")
     @classmethod
@@ -100,6 +102,10 @@ def get_rooms(session: SessionDep, params: Annotated[RoomQueryParams, Query()]):
     if params.search:
         # statement = statement.where(func.lower(Room.name).contains(params.search))
         statement = statement.where(col(Room.name).like(f"%{params.search}%"))
+
+    statement = (
+        statement.limit(params.limit).offset(params.offset).order_by(col(Room.id))
+    )
 
     return session.exec(statement).all()
 
