@@ -55,11 +55,22 @@ def get_room_or_404(session: SessionDep, room_id: RoomId):
 
 RoomDep = Annotated[Room, Depends(get_room_or_404)]
 
+MAINTENANCE_MODE = True
+
+
+def check_maintenance_mode():
+    if MAINTENANCE_MODE:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Service is under maintenance. Try again later.",
+        )
+
 
 @router.post(
     "/",
     status_code=status.HTTP_201_CREATED,
     response_model=RoomPublic,
+    dependencies=[Depends(check_maintenance_mode)],
 )
 def create_room(session: SessionDep, room: RoomBase):
     validated_room = Room.model_validate(room)
@@ -108,6 +119,7 @@ def get_room(room: RoomDep):
     "/{room_id}",
     status_code=status.HTTP_200_OK,
     response_model=RoomPublic,
+    dependencies=[Depends(check_maintenance_mode)],
 )
 def update_room(session: SessionDep, room: RoomDep, room_payload: RoomUpdate):
     room_payload_without_default_values = room_payload.model_dump(exclude_unset=True)
@@ -123,6 +135,7 @@ def update_room(session: SessionDep, room: RoomDep, room_payload: RoomUpdate):
     "/{room_id}",
     status_code=status.HTTP_200_OK,
     response_model=RoomPublic,
+    dependencies=[Depends(check_maintenance_mode)],
 )
 def delete_room(session: SessionDep, room: RoomDep):
     session.delete(room)
