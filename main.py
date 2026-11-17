@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field, StringConstraints, field_validator
 from sqlmodel import col, func, select
 
 from database import SessionDep, create_db_and_tables
-from models import Room
+from models import Room, RoomBase, RoomPublic, RoomUpdate
 
 openapi_tags = [{"name": "rooms", "description": "Operations with **rooms**"}]
 
@@ -89,12 +89,18 @@ def root(
     return {"message": greeting, "user_agent": app_headers.user_agent}
 
 
-@app.post("/rooms", status_code=status.HTTP_201_CREATED, tags=["rooms"])
-def create_room(session: SessionDep, room: Room) -> Room:
-    session.add(room)
+@app.post(
+    "/rooms",
+    status_code=status.HTTP_201_CREATED,
+    tags=["rooms"],
+    response_model=RoomPublic,
+)
+def create_room(session: SessionDep, room: RoomBase):
+    validated_room = Room.model_validate(room)
+    session.add(validated_room)
     session.commit()
-    session.refresh(room)
-    return room
+    session.refresh(validated_room)
+    return validated_room
 
 
 @app.get(
