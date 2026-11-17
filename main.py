@@ -1,7 +1,16 @@
 from contextlib import asynccontextmanager
 from typing import Annotated, Literal
 
-from fastapi import Cookie, FastAPI, Header, HTTPException, Query, Response, status
+from fastapi import (
+    Cookie,
+    FastAPI,
+    Header,
+    HTTPException,
+    Path,
+    Query,
+    Response,
+    status,
+)
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, StringConstraints, field_validator
 from sqlmodel import col, func, select
@@ -63,6 +72,9 @@ class AppHeaders(BaseModel):
     user_agent: str | None
 
 
+RoomId = Annotated[int, Path(ge=1, description="The id of ther room to fetch")]
+
+
 @app.get("/", status_code=status.HTTP_200_OK)
 def root(
     app_cookies: Annotated[AppCookies, Cookie()],
@@ -111,12 +123,33 @@ def get_rooms(session: SessionDep, params: Annotated[RoomQueryParams, Query()]):
 
 
 @app.get("/rooms/{room_id}", status_code=status.HTTP_200_OK, tags=["rooms"])
-def get_room(room_id: int):
-    for room in [apartment, house, studio]:
-        if room["id"] == room_id:
-            return room
+def get_room(
+    session: SessionDep,
+    room_id: RoomId,
+) -> Room:
+    room = session.get(Room, room_id)
+    if not room:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
+        )
 
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    return room
+
+
+@app.patch("/rooms/{room_id}", status_code=status.HTTP_200_OK, tags=["rooms"])
+def update_room(session: SessionDep, room_id: RoomId, room_payload: Room) -> Room:
+    room = session.get(Room, room_id)
+    if not room:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
+        )
+
+    room.sqlmodel_update(room_payload)
+    session.add(room)
+    session.commit()
+    session.refresh(room)
+
+    return room
 
 
 @app.get("/preferences", status_code=status.HTTP_200_OK, tags=["preferences"])
