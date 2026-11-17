@@ -4,8 +4,10 @@ from typing import Annotated, Literal
 from fastapi import Cookie, FastAPI, Header, HTTPException, Query, Response, status
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, StringConstraints, field_validator
+from sqlmodel import select
 
-from database import create_db_and_tables
+from database import SessionDep, create_db_and_tables
+from models import Room
 
 openapi_tags = [{"name": "rooms", "description": "Operations with **rooms**"}]
 
@@ -27,28 +29,6 @@ app = FastAPI(
     openapi_tags=openapi_tags,
 )
 app.mount("/assets", StaticFiles(directory="assets"), name="assets")
-
-apartment = {
-    "id": 1,
-    "name": "Sunny 2-bedroom apartment",
-    "price_per_night": 200,
-    "bedrooms": 2,
-    "bathrooms": 1.5,
-}
-house = {
-    "id": 2,
-    "name": "Cozy 3-bedroom house",
-    "price_per_night": 350,
-    "bedrooms": 3,
-    "bathrooms": 2.5,
-}
-studio = {
-    "id": 3,
-    "name": "Modern studio near museum",
-    "price_per_night": 150,
-    "bedrooms": 1,
-    "bathrooms": 1,
-}
 
 
 class RoomQueryParams(BaseModel):
@@ -95,6 +75,14 @@ def root(
     return {"message": greeting, "user_agent": app_headers.user_agent}
 
 
+@app.post("/rooms", status_code=status.HTTP_201_CREATED, tags=["rooms"])
+def create_room(session: SessionDep, room: Room) -> Room:
+    session.add(room)
+    session.commit()
+    session.refresh(room)
+    return room
+
+
 @app.get(
     "/rooms",
     status_code=status.HTTP_200_OK,
@@ -103,16 +91,14 @@ def root(
     description="Returns all rooms. Supports filtering",
     response_description="A list of rooms matching the filter criteria",
 )
-def get_rooms(params: Annotated[RoomQueryParams, Query()]):
-    results = [apartment, house, studio]
+def get_rooms(session: SessionDep, params: Annotated[RoomQueryParams, Query()]):
+    results = session.exec(select(Room)).all()
 
     if params.max_price:
-        results = [
-            room for room in results if room["price_per_night"] <= params.max_price
-        ]
+        results = [room for room in results if room.price_per_night <= params.max_price]
 
     if params.search:
-        results = [room for room in results if params.search in room["name"].lower()]
+        results = [room for room in results if params.search in room.name.lower()]
 
     return results
 
