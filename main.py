@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 
 from fastapi import (
     Cookie,
+    Depends,
     FastAPI,
     Header,
     HTTPException,
@@ -75,6 +76,19 @@ class AppHeaders(BaseModel):
 RoomId = Annotated[int, Path(ge=1, description="The id of ther room to fetch")]
 
 
+def get_room_or_404(session: SessionDep, room_id: RoomId):
+    room = session.get(Room, room_id)
+    if not room:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
+        )
+
+    return room
+
+
+RoomDep = Annotated[Room, Depends(get_room_or_404)]
+
+
 @app.get("/", status_code=status.HTTP_200_OK)
 def root(
     app_cookies: Annotated[AppCookies, Cookie()],
@@ -135,15 +149,7 @@ def get_rooms(session: SessionDep, params: Annotated[RoomQueryParams, Query()]):
     tags=["rooms"],
     response_model=RoomPublic,
 )
-def get_room(
-    session: SessionDep,
-    room_id: RoomId,
-):
-    room = session.get(Room, room_id)
-    if not room:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
-        )
+def get_room(room: RoomDep):
 
     return room
 
@@ -154,13 +160,7 @@ def get_room(
     tags=["rooms"],
     response_model=RoomPublic,
 )
-def update_room(session: SessionDep, room_id: RoomId, room_payload: RoomUpdate):
-    room = session.get(Room, room_id)
-    if not room:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
-        )
-
+def update_room(session: SessionDep, room: RoomDep, room_payload: RoomUpdate):
     room_payload_without_default_values = room_payload.model_dump(exclude_unset=True)
     room.sqlmodel_update(room_payload_without_default_values)
     session.add(room)
@@ -170,14 +170,13 @@ def update_room(session: SessionDep, room_id: RoomId, room_payload: RoomUpdate):
     return room
 
 
-@app.delete("/rooms/{room_id}", status_code=status.HTTP_200_OK, tags=["rooms"])
-def delete_room(session: SessionDep, room_id: RoomId):
-    room = session.get(Room, room_id)
-    if not room:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
-        )
-
+@app.delete(
+    "/rooms/{room_id}",
+    status_code=status.HTTP_200_OK,
+    tags=["rooms"],
+    response_model=RoomPublic,
+)
+def delete_room(session: SessionDep, room: RoomDep):
     session.delete(room)
     session.commit()
     return room
