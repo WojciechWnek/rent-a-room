@@ -3,7 +3,6 @@ from typing import Annotated
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
     Query,
     status,
 )
@@ -12,6 +11,7 @@ from sqlmodel import col, select
 
 from app.dependencies.database import SessionDep
 from app.dependencies.rooms import RoomDep
+from app.errors import SERVICE_UNDER_MAINTENANCE
 from app.models.room import Room, RoomBase, RoomPublic, RoomUpdate
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
@@ -45,10 +45,7 @@ MAINTENANCE_MODE = False
 
 def check_maintenance_mode():
     if MAINTENANCE_MODE:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Service is under maintenance. Try again later.",
-        )
+        raise SERVICE_UNDER_MAINTENANCE
 
 
 @router.post(
