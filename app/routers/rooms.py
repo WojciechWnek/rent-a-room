@@ -4,7 +4,6 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
-    Path,
     Query,
     status,
 )
@@ -12,6 +11,7 @@ from pydantic import BaseModel, Field, StringConstraints, field_validator
 from sqlmodel import col, select
 
 from app.dependencies.database import SessionDep
+from app.dependencies.rooms import RoomDep
 from app.models.room import Room, RoomBase, RoomPublic, RoomUpdate
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
@@ -39,21 +39,6 @@ class RoomQueryParams(BaseModel):
             raise ValueError("No funny business allowed")
         return search
 
-
-RoomId = Annotated[int, Path(ge=1, description="The id of ther room to fetch")]
-
-
-async def get_room_or_404(session: SessionDep, room_id: RoomId):
-    room = await session.get(Room, room_id)
-    if not room:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
-        )
-
-    return room
-
-
-RoomDep = Annotated[Room, Depends(get_room_or_404)]
 
 MAINTENANCE_MODE = False
 
