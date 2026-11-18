@@ -16,7 +16,7 @@ def log_request(request: Request):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # before server starts
-    create_db_and_tables()
+    await create_db_and_tables()
     yield
     # after server shutdown
 

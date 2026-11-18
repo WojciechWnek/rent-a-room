@@ -35,5 +35,5 @@ def set_preferences(response: Response):
     app_cookies = AppCookies()
 
     response.set_cookie(key="theme", value=app_cookies.theme)
-    response.set_cookie(key="language", value=app_cookies.languageß)
+    response.set_cookie(key="language", value=app_cookies.language)
     return {"message": "Preferences set"}
