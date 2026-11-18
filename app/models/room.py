@@ -20,7 +20,7 @@ class Room(RoomBase, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
 
-    bookings: list["Booking"] = Relationship()
+    bookings: list["Booking"] = Relationship(back_populates="room")
 
 
 # room response model

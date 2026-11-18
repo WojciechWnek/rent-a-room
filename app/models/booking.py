@@ -20,7 +20,7 @@ class Booking(BookingBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     room_id: int = Field(foreign_key="rooms.id")
 
-    room: "Room" = Relationship()
+    room: "Room" = Relationship(back_populates="bookings")
 
 
 class BookingPublic(BookingBase):
