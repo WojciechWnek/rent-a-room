@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Path, status
 from app.dependencies.database import SessionDep
 from app.models.booking import Booking, BookingBase, BookingPublic
 from app.models.room import Room
+from app.models.user import User
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -18,6 +19,12 @@ async def create_booking(
     if not room:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Room does not exist"
+        )
+
+    user = await session.get(User, booking.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist"
         )
 
     validated_booking = Booking.model_validate(booking)

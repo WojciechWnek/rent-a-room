@@ -1,9 +1,10 @@
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path, status
+from sqlalchemy.orm import selectinload
 
 from app.dependencies.database import SessionDep
-from app.dependencies.users import UserDep
+from app.dependencies.users import UserDep, UserId
 from app.models.booking import BookingPublic
 from app.models.user import User, UserBase, UserPublic
 
@@ -29,5 +30,11 @@ async def get_user(user: UserDep):
     status_code=status.HTTP_200_OK,
     response_model=list[BookingPublic],
 )
-async def get_user_bookings(user: UserDep):
+async def get_user_bookings(session: SessionDep, user_id: UserId):
+    user = await session.get(User, user_id, options=[selectinload(User.bookings)])  # type: ignore
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
     return user.bookings
