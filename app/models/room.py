@@ -1,4 +1,9 @@
-from sqlmodel import Field, SQLModel
+from typing import TYPE_CHECKING
+
+from sqlmodel import Field, Relationship, SQLModel
+
+if TYPE_CHECKING:
+    from app.models.booking import Booking
 
 
 # base model class - shared fields for all HTTP
@@ -14,6 +19,8 @@ class Room(RoomBase, table=True):
     __tablename__: str = "rooms"
 
     id: int | None = Field(default=None, primary_key=True)
+
+    bookings: list["Booking"] = Relationship()
 
 
 # room response model
