@@ -55,7 +55,7 @@ def get_room_or_404(session: SessionDep, room_id: RoomId):
 
 RoomDep = Annotated[Room, Depends(get_room_or_404)]
 
-MAINTENANCE_MODE = True
+MAINTENANCE_MODE = False
 
 
 def check_maintenance_mode():
