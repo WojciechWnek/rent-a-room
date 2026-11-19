@@ -43,7 +43,7 @@ async def get_booking(session: SessionDep, booking_id: Annotated[int, Path(ge=1)
         options=[joinedload(Booking.room), joinedload(Booking.user)],  # type: ignore
     )
 
-    if not booking_id:
+    if not booking:
         raise BOOKING_NOT_FOUND
 
     return booking
