@@ -20,7 +20,9 @@ class Room(RoomBase, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
 
-    bookings: list["Booking"] = Relationship(back_populates="room", cascade_delete=True)
+    bookings: list["Booking"] = Relationship(
+        back_populates="room", passive_deletes="all"
+    )
 
 
 # room response model
