@@ -36,3 +36,7 @@ class RoomUpdate(SQLModel):
     price_per_night: int | None = None
     bedrooms: float | None = None
     bathrooms: float | None = None
+
+
+class RoomWithCount(RoomPublic):
+    booking_count: int

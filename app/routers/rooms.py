@@ -7,13 +7,13 @@ from fastapi import (
     status,
 )
 from pydantic import BaseModel, Field, StringConstraints, field_validator
-from sqlmodel import col, exists, select
+from sqlmodel import col, exists, func, select
 
 from app.dependencies.database import SessionDep
 from app.dependencies.rooms import RoomDep
 from app.errors import SERVICE_UNDER_MAINTENANCE
 from app.models.booking import Booking
-from app.models.room import Room, RoomBase, RoomPublic, RoomUpdate
+from app.models.room import Room, RoomBase, RoomPublic, RoomUpdate, RoomWithCount
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
@@ -107,6 +107,25 @@ async def get_unbooked_rooms(session: SessionDep):
     result = await session.exec(statement)
     rooms = result.all()
     return rooms
+
+
+@router.get(
+    "/stats", status_code=status.HTTP_200_OK, response_model=list[RoomWithCount]
+)
+async def get_room_with_count(session: SessionDep):
+    statement = (
+        select(Room, func.count(col(Booking.id).label("booking_count")))
+        .outerjoin(Booking, col(Booking.room_id) == Room.id)
+        .group_by(col(Room.id))
+        .order_by(col(Room.id))
+    )
+    result = await session.exec(statement)
+    data = result.all()
+
+    return [
+        RoomWithCount(**room.model_dump(), booking_count=booking_count)
+        for room, booking_count in data
+    ]
 
 
 @router.get(
